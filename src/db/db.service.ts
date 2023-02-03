@@ -11,12 +11,16 @@ import { UpdatePasswordDto } from 'src/users/dto/update-password.dto';
 import { Artist } from 'src/artists/interfaces/artist.interface';
 import { CreateArtistDto } from 'src/artists/dto/create-artist.dto';
 import { UpdateArtistDto } from 'src/artists/dto/update-artist.dto';
+import { Track } from 'src/tracks/interfaces/track.interface';
+import { CreateTrackDto } from 'src/tracks/dto/create-track.dto';
+import { UpdateTrackDto } from 'src/tracks/dto/update-track.dto';
 
 @Injectable()
 export class DbService {
   private db: DB = {
     users: {},
     artists: {},
+    tracks: {},
   };
 
   private checkUserExistance(id: string) {
@@ -29,6 +33,23 @@ export class DbService {
     if (this.db.artists[id] === undefined) {
       throw new NotFoundException("Artist Id doesn't exist");
     }
+  }
+
+  private checkTrackExistance(id: string) {
+    if (this.db.tracks[id] === undefined) {
+      throw new NotFoundException("Track Id doesn't exist");
+    }
+  }
+
+  private deleteFromTracks(id: string) {
+    const tracks = Object.entries(this.db.tracks).map((trackRecord) => {
+      if (trackRecord[1].artistId === id) {
+        trackRecord[1].artistId = null;
+      }
+
+      return trackRecord;
+    });
+    this.db.tracks = Object.fromEntries(tracks);
   }
 
   getUsers(): Omit<User, 'password'>[] {
@@ -128,6 +149,45 @@ export class DbService {
 
   deleteArtist(id: string): void {
     this.checkArtistExistance(id);
+    this.deleteFromTracks(id);
     delete this.db.artists[id];
+  }
+
+  getTracks(): Track[] {
+    return Object.values(this.db.tracks);
+  }
+
+  getTrack(id: string): Track {
+    this.checkTrackExistance(id);
+
+    return this.db.tracks[id];
+  }
+
+  createTrack(track: CreateTrackDto): Track {
+    const id = newUuid();
+    const newTrack: Track = {
+      id,
+      ...track,
+      albumId: track.albumId ?? null,
+      artistId: track.artistId ?? null,
+    };
+    this.db.tracks[id] = { ...newTrack };
+
+    return newTrack;
+  }
+
+  updateTrack(id: string, updateTrackDto: UpdateTrackDto): Track {
+    this.checkTrackExistance(id);
+
+    const updatedTrack = { ...this.db.tracks[id], ...updateTrackDto };
+
+    this.db.tracks[id] = updatedTrack;
+
+    return updatedTrack;
+  }
+
+  deleteTrack(id: string): void {
+    this.checkTrackExistance(id);
+    delete this.db.tracks[id];
   }
 }
