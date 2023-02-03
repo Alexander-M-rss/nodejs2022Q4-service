@@ -8,16 +8,26 @@ import { User } from 'src/users/interfaces/user.interface';
 import { v4 as newUuid } from 'uuid';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { UpdatePasswordDto } from 'src/users/dto/update-password.dto';
+import { Artist } from 'src/artists/interfaces/artist.interface';
+import { CreateArtistDto } from 'src/artists/dto/create-artist.dto';
+import { UpdateArtistDto } from 'src/artists/dto/update-artist.dto';
 
 @Injectable()
 export class DbService {
   private db: DB = {
     users: {},
+    artists: {},
   };
 
   private checkUserExistance(id: string) {
     if (this.db.users[id] === undefined) {
       throw new NotFoundException("User Id doesn't exist");
+    }
+  }
+
+  private checkArtistExistance(id: string) {
+    if (this.db.artists[id] === undefined) {
+      throw new NotFoundException("Artist Id doesn't exist");
     }
   }
 
@@ -52,6 +62,7 @@ export class DbService {
 
     this.db.users[id] = { ...newUser };
     delete newUser.password;
+
     return newUser;
   }
 
@@ -82,5 +93,41 @@ export class DbService {
   deleteUser(id: string): void {
     this.checkUserExistance(id);
     delete this.db.users[id];
+  }
+
+  getArtists(): Artist[] {
+    return Object.values(this.db.artists);
+  }
+
+  getArtist(id: string): Artist {
+    this.checkArtistExistance(id);
+
+    return this.db.artists[id];
+  }
+
+  createArtist(artist: CreateArtistDto): Artist {
+    const id = newUuid();
+    const newArtist: Artist = {
+      id,
+      ...artist,
+    };
+    this.db.artists[id] = { ...newArtist };
+
+    return newArtist;
+  }
+
+  updateArtist(id: string, updateArtistDto: UpdateArtistDto): Artist {
+    this.checkArtistExistance(id);
+
+    const updatedArtist = { ...this.db.artists[id], ...updateArtistDto };
+
+    this.db.artists[id] = updatedArtist;
+
+    return updatedArtist;
+  }
+
+  deleteArtist(id: string): void {
+    this.checkArtistExistance(id);
+    delete this.db.artists[id];
   }
 }
