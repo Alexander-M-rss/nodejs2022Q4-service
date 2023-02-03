@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { DB } from './interfaces/db.interface';
 import { User } from 'src/users/interfaces/user.interface';
@@ -18,6 +19,11 @@ import { UpdateTrackDto } from 'src/tracks/dto/update-track.dto';
 import { Album } from 'src/albums/interfaces/album.interface';
 import { CreateAlbumDto } from 'src/albums/dto/create-album.dto';
 import { UpdateAlbumDto } from 'src/albums/dto/update-album.dto';
+import { FavoritesRepsonse } from 'src/favorites/interfaces/response.interface';
+import { FavoritesEntityType } from 'src/favorites/types/favorites-entity-type';
+
+type EntityType = FavoritesEntityType | 'user';
+type FavoritesTables = 'tracks' | 'artists' | 'albums';
 
 @Injectable()
 export class DbService {
@@ -26,29 +32,18 @@ export class DbService {
     artists: {},
     tracks: {},
     albums: {},
+    favorites: {
+      artists: [],
+      albums: [],
+      tracks: [],
+    },
   };
 
-  private checkUserExistance(id: string) {
-    if (this.db.users[id] === undefined) {
-      throw new NotFoundException("User Id doesn't exist");
-    }
-  }
+  private checkEntityExistance(entityType: EntityType, id: string) {
+    const table = entityType + 's';
 
-  private checkArtistExistance(id: string) {
-    if (this.db.artists[id] === undefined) {
-      throw new NotFoundException("Artist Id doesn't exist");
-    }
-  }
-
-  private checkTrackExistance(id: string) {
-    if (this.db.tracks[id] === undefined) {
-      throw new NotFoundException("Track Id doesn't exist");
-    }
-  }
-
-  private checkAlbumExistance(id: string) {
-    if (this.db.albums[id] === undefined) {
-      throw new NotFoundException("Album Id doesn't exist");
+    if (this.db[table][id] === undefined) {
+      throw new NotFoundException(`${entityType} Id doesn't exist`);
     }
   }
 
@@ -67,6 +62,20 @@ export class DbService {
     this.db[entity] = Object.fromEntries(entries);
   }
 
+  private removeFromFavorites(
+    entityType: FavoritesEntityType,
+    id: string,
+  ): void {
+    const table = entityType + 's';
+    const idx = this.db.favorites[table].findIndex((item) => item === id);
+
+    if (idx < 0) {
+      return;
+    }
+
+    this.db.favorites[table].splice(idx, 1);
+  }
+
   getUsers(): Omit<User, 'password'>[] {
     return Object.values(this.db.users).map((user) => {
       const userWoPassword = { ...user };
@@ -77,7 +86,7 @@ export class DbService {
   }
 
   getUser(id: string): Omit<User, 'password'> {
-    this.checkUserExistance(id);
+    this.checkEntityExistance('user', id);
 
     const userWoPassword = { ...this.db.users[id] };
     delete userWoPassword.password;
@@ -106,7 +115,7 @@ export class DbService {
     id: string,
     updatePasswordDto: UpdatePasswordDto,
   ): Omit<User, 'password'> {
-    this.checkUserExistance(id);
+    this.checkEntityExistance('user', id);
     const user = this.db.users[id];
 
     if (user.password !== updatePasswordDto.oldPassword) {
@@ -127,7 +136,7 @@ export class DbService {
   }
 
   deleteUser(id: string): void {
-    this.checkUserExistance(id);
+    this.checkEntityExistance('user', id);
     delete this.db.users[id];
   }
 
@@ -136,7 +145,7 @@ export class DbService {
   }
 
   getArtist(id: string): Artist {
-    this.checkArtistExistance(id);
+    this.checkEntityExistance('artist', id);
 
     return this.db.artists[id];
   }
@@ -153,7 +162,7 @@ export class DbService {
   }
 
   updateArtist(id: string, updateArtistDto: UpdateArtistDto): Artist {
-    this.checkArtistExistance(id);
+    this.checkEntityExistance('artist', id);
 
     const updatedArtist = { ...this.db.artists[id], ...updateArtistDto };
 
@@ -163,9 +172,10 @@ export class DbService {
   }
 
   deleteArtist(id: string): void {
-    this.checkArtistExistance(id);
+    this.checkEntityExistance('artist', id);
     this.deleteFrom('tracks', 'artistId', id);
     this.deleteFrom('albums', 'artistId', id);
+    this.removeFromFavorites('artist', id);
     delete this.db.artists[id];
   }
 
@@ -174,7 +184,7 @@ export class DbService {
   }
 
   getTrack(id: string): Track {
-    this.checkTrackExistance(id);
+    this.checkEntityExistance('track', id);
 
     return this.db.tracks[id];
   }
@@ -182,7 +192,7 @@ export class DbService {
   createTrack(track: CreateTrackDto): Track {
     if (track.artistId) {
       try {
-        this.checkArtistExistance(track.artistId);
+        this.checkEntityExistance('artist', track.artistId);
       } catch (_) {
         throw new BadRequestException(
           "Artist with such artistId doesn't exist",
@@ -191,7 +201,7 @@ export class DbService {
     }
     if (track.albumId) {
       try {
-        this.checkAlbumExistance(track.albumId);
+        this.checkEntityExistance('album', track.albumId);
       } catch (_) {
         throw new BadRequestException("Album with such albumId doesn't exist");
       }
@@ -210,10 +220,10 @@ export class DbService {
   }
 
   updateTrack(id: string, updateTrackDto: UpdateTrackDto): Track {
-    this.checkTrackExistance(id);
+    this.checkEntityExistance('track', id);
     if (updateTrackDto.artistId) {
       try {
-        this.checkArtistExistance(updateTrackDto.artistId);
+        this.checkEntityExistance('artist', updateTrackDto.artistId);
       } catch (_) {
         throw new BadRequestException(
           "Artist with such artistId doesn't exist",
@@ -222,7 +232,7 @@ export class DbService {
     }
     if (updateTrackDto.albumId) {
       try {
-        this.checkAlbumExistance(updateTrackDto.albumId);
+        this.checkEntityExistance('album', updateTrackDto.albumId);
       } catch (_) {
         throw new BadRequestException("Album with such albumId doesn't exist");
       }
@@ -236,7 +246,8 @@ export class DbService {
   }
 
   deleteTrack(id: string): void {
-    this.checkTrackExistance(id);
+    this.checkEntityExistance('track', id);
+    this.removeFromFavorites('track', id);
     delete this.db.tracks[id];
   }
 
@@ -245,7 +256,7 @@ export class DbService {
   }
 
   getAlbum(id: string): Album {
-    this.checkAlbumExistance(id);
+    this.checkEntityExistance('album', id);
 
     return this.db.albums[id];
   }
@@ -253,7 +264,7 @@ export class DbService {
   createAlbum(album: CreateAlbumDto): Album {
     if (album.artistId) {
       try {
-        this.checkArtistExistance(album.artistId);
+        this.checkEntityExistance('artist', album.artistId);
       } catch (_) {
         throw new BadRequestException(
           "Artist with such artistId doesn't exist",
@@ -272,10 +283,10 @@ export class DbService {
   }
 
   updateAlbum(id: string, updateAlbumDto: UpdateAlbumDto): Album {
-    this.checkAlbumExistance(id);
+    this.checkEntityExistance('album', id);
     if (updateAlbumDto.artistId) {
       try {
-        this.checkArtistExistance(updateAlbumDto.artistId);
+        this.checkEntityExistance('artist', updateAlbumDto.artistId);
       } catch (_) {
         throw new BadRequestException(
           "Artist with such artistId doesn't exist",
@@ -291,8 +302,57 @@ export class DbService {
   }
 
   deleteAlbum(id: string): void {
-    this.checkAlbumExistance(id);
+    this.checkEntityExistance('album', id);
     this.deleteFrom('tracks', 'albumId', id);
+    this.removeFromFavorites('album', id);
     delete this.db.albums[id];
+  }
+
+  private getFromFavorites<T>(entity: FavoritesTables): T[] {
+    return Object.values(this.db[entity]).filter((item) =>
+      this.db.favorites[entity].includes(item.id),
+    );
+  }
+
+  getFavorites(): FavoritesRepsonse {
+    return {
+      artists: this.getFromFavorites('artists'),
+      albums: this.getFromFavorites('albums'),
+      tracks: this.getFromFavorites('tracks'),
+    };
+  }
+
+  addEntityToFavorites(entityType: FavoritesEntityType, id: string): string {
+    try {
+      this.checkEntityExistance(entityType, id);
+    } catch (_) {
+      throw new UnprocessableEntityException(
+        `${entityType} with such id doesn't exist`,
+      );
+    }
+
+    const table = (entityType + 's') as FavoritesTables;
+
+    if (!this.db.favorites[table].includes(id)) {
+      this.db.favorites[table].push(id);
+    }
+
+    return `${entityType} has been added to favorites`;
+  }
+
+  removeEntityFromFavorites(
+    entityType: FavoritesEntityType,
+    id: string,
+  ): string {
+    const table = (entityType + 's') as FavoritesTables;
+    const idx = this.db.favorites[table].findIndex((item) => item === id);
+
+    if (idx < 0) {
+      throw new NotFoundException(`${entityType} is not favorite`);
+    }
+
+    this.db.favorites[table].splice(idx, 1);
+
+    return `${entityType} has been removed from favorites`;
   }
 }

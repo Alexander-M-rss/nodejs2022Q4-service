@@ -6,9 +6,17 @@ import { ArtistsModule } from './artists/artists.module';
 import { DbModule } from './db/db.module';
 import { TracksModule } from './tracks/tracks.module';
 import { AlbumsModule } from './albums/albums.module';
+import { FavoritesModule } from './favorites/favorites.module';
 
 @Module({
-  imports: [UsersModule, ArtistsModule, TracksModule, AlbumsModule, DbModule],
+  imports: [
+    UsersModule,
+    ArtistsModule,
+    TracksModule,
+    AlbumsModule,
+    FavoritesModule,
+    DbModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
