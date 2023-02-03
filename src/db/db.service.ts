@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { DB } from './interfaces/db.interface';
 import { User } from 'src/users/interfaces/user.interface';
@@ -14,6 +15,9 @@ import { UpdateArtistDto } from 'src/artists/dto/update-artist.dto';
 import { Track } from 'src/tracks/interfaces/track.interface';
 import { CreateTrackDto } from 'src/tracks/dto/create-track.dto';
 import { UpdateTrackDto } from 'src/tracks/dto/update-track.dto';
+import { Album } from 'src/albums/interfaces/album.interface';
+import { CreateAlbumDto } from 'src/albums/dto/create-album.dto';
+import { UpdateAlbumDto } from 'src/albums/dto/update-album.dto';
 
 @Injectable()
 export class DbService {
@@ -21,6 +25,7 @@ export class DbService {
     users: {},
     artists: {},
     tracks: {},
+    albums: {},
   };
 
   private checkUserExistance(id: string) {
@@ -41,15 +46,25 @@ export class DbService {
     }
   }
 
-  private deleteFromTracks(id: string) {
-    const tracks = Object.entries(this.db.tracks).map((trackRecord) => {
-      if (trackRecord[1].artistId === id) {
-        trackRecord[1].artistId = null;
+  private checkAlbumExistance(id: string) {
+    if (this.db.albums[id] === undefined) {
+      throw new NotFoundException("Album Id doesn't exist");
+    }
+  }
+
+  private deleteFrom(
+    entity: 'tracks' | 'albums',
+    idKey: 'artistId' | 'albumId',
+    id: string,
+  ) {
+    const entries = Object.entries(this.db[entity]).map((entry) => {
+      if (entry[1]?.[idKey] === id) {
+        entry[1][idKey] = null;
       }
 
-      return trackRecord;
+      return entry;
     });
-    this.db.tracks = Object.fromEntries(tracks);
+    this.db[entity] = Object.fromEntries(entries);
   }
 
   getUsers(): Omit<User, 'password'>[] {
@@ -149,7 +164,8 @@ export class DbService {
 
   deleteArtist(id: string): void {
     this.checkArtistExistance(id);
-    this.deleteFromTracks(id);
+    this.deleteFrom('tracks', 'artistId', id);
+    this.deleteFrom('albums', 'artistId', id);
     delete this.db.artists[id];
   }
 
@@ -164,6 +180,23 @@ export class DbService {
   }
 
   createTrack(track: CreateTrackDto): Track {
+    if (track.artistId) {
+      try {
+        this.checkArtistExistance(track.artistId);
+      } catch (_) {
+        throw new BadRequestException(
+          "Artist with such artistId doesn't exist",
+        );
+      }
+    }
+    if (track.albumId) {
+      try {
+        this.checkAlbumExistance(track.albumId);
+      } catch (_) {
+        throw new BadRequestException("Album with such albumId doesn't exist");
+      }
+    }
+
     const id = newUuid();
     const newTrack: Track = {
       id,
@@ -178,6 +211,22 @@ export class DbService {
 
   updateTrack(id: string, updateTrackDto: UpdateTrackDto): Track {
     this.checkTrackExistance(id);
+    if (updateTrackDto.artistId) {
+      try {
+        this.checkArtistExistance(updateTrackDto.artistId);
+      } catch (_) {
+        throw new BadRequestException(
+          "Artist with such artistId doesn't exist",
+        );
+      }
+    }
+    if (updateTrackDto.albumId) {
+      try {
+        this.checkAlbumExistance(updateTrackDto.albumId);
+      } catch (_) {
+        throw new BadRequestException("Album with such albumId doesn't exist");
+      }
+    }
 
     const updatedTrack = { ...this.db.tracks[id], ...updateTrackDto };
 
@@ -189,5 +238,61 @@ export class DbService {
   deleteTrack(id: string): void {
     this.checkTrackExistance(id);
     delete this.db.tracks[id];
+  }
+
+  getAlbums(): Album[] {
+    return Object.values(this.db.albums);
+  }
+
+  getAlbum(id: string): Album {
+    this.checkAlbumExistance(id);
+
+    return this.db.albums[id];
+  }
+
+  createAlbum(album: CreateAlbumDto): Album {
+    if (album.artistId) {
+      try {
+        this.checkArtistExistance(album.artistId);
+      } catch (_) {
+        throw new BadRequestException(
+          "Artist with such artistId doesn't exist",
+        );
+      }
+    }
+    const id = newUuid();
+    const newAlbum: Album = {
+      id,
+      ...album,
+      artistId: album.artistId ?? null,
+    };
+    this.db.albums[id] = { ...newAlbum };
+
+    return newAlbum;
+  }
+
+  updateAlbum(id: string, updateAlbumDto: UpdateAlbumDto): Album {
+    this.checkAlbumExistance(id);
+    if (updateAlbumDto.artistId) {
+      try {
+        this.checkArtistExistance(updateAlbumDto.artistId);
+      } catch (_) {
+        throw new BadRequestException(
+          "Artist with such artistId doesn't exist",
+        );
+      }
+    }
+
+    const updatedAlbum = { ...this.db.albums[id], ...updateAlbumDto };
+
+    this.db.albums[id] = updatedAlbum;
+
+    return updatedAlbum;
+  }
+
+  deleteAlbum(id: string): void {
+    this.checkAlbumExistance(id);
+    this.deleteFrom('tracks', 'albumId', id);
+    delete this.db.albums[id];
   }
 }
