@@ -1,0 +1,13 @@
+.git
+coverage
+database
+dist
+logs
+node_modules
+test
+.gitignore
+.env.example
+README.md
+Dockerfile
+Dockerfile-db
+docker-compose.yml
