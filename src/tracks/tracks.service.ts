@@ -1,29 +1,52 @@
-import { Injectable } from '@nestjs/common';
-import { DbService } from 'src/db/db.service';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateTrackDto } from './dto/create-track.dto';
 import { UpdateTrackDto } from './dto/update-track.dto';
+import { TrackEntity } from './entities/track.entity';
 
 @Injectable()
 export class TracksService {
-  constructor(private readonly dbService: DbService) {}
+  constructor(
+    @InjectRepository(TrackEntity)
+    private readonly trackRepository: Repository<TrackEntity>,
+  ) {}
 
-  create(createTrackDto: CreateTrackDto) {
-    return this.dbService.createTrack(createTrackDto);
+  async create(createTrackDto: CreateTrackDto): Promise<TrackEntity> {
+    const newTrack = this.trackRepository.create(createTrackDto);
+
+    return this.trackRepository.save(newTrack);
   }
 
-  findAll() {
-    return this.dbService.getTracks();
+  async findAll(): Promise<TrackEntity[]> {
+    return this.trackRepository.find();
   }
 
-  findOne(id: string) {
-    return this.dbService.getTrack(id);
+  async findOne(id: string): Promise<TrackEntity> {
+    const track = await this.trackRepository.findOne({ where: { id } });
+
+    if (!track) {
+      throw new NotFoundException("Track Id doesn't exist");
+    }
+
+    return track;
   }
 
-  update(id: string, updateTrackDto: UpdateTrackDto) {
-    return this.dbService.updateTrack(id, updateTrackDto);
+  async update(
+    id: string,
+    updateTrackDto: UpdateTrackDto,
+  ): Promise<TrackEntity> {
+    const track = await this.findOne(id);
+
+    Object.assign(track, updateTrackDto);
+    return this.trackRepository.save(track);
   }
 
-  remove(id: string) {
-    return this.dbService.deleteTrack(id);
+  async remove(id: string): Promise<void> {
+    const result = await this.trackRepository.delete(id);
+
+    if (!result.affected) {
+      throw new NotFoundException("Track Id doesn't exist");
+    }
   }
 }
