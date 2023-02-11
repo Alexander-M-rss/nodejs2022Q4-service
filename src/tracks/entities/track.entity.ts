@@ -1,4 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Exclude } from 'class-transformer';
+import { ArtistEntity } from 'src/artists/entities/artist.entity';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Track } from '../interfaces/track.interface';
 
 @Entity('track')
@@ -17,4 +19,11 @@ export class TrackEntity implements Track {
 
   @Column()
   duration: number;
+
+  @ManyToOne(() => ArtistEntity, (artist) => artist.tracks, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @Exclude()
+  artist: ArtistEntity;
 }
