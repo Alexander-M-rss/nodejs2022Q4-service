@@ -20,7 +20,6 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<Omit<User, 'password'>> {
     const newUser = {
       ...createUserDto,
-      version: 1,
     };
 
     const createdUser = this.userRepository.create(newUser);
@@ -55,7 +54,6 @@ export class UsersService {
       throw new ForbiddenException('Old password is incorect');
     }
     user.password = updatePasswordDto.newPassword;
-    user.version += 1;
 
     return (await this.userRepository.save(user)).response();
   }

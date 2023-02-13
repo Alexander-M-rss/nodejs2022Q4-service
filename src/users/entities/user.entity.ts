@@ -4,6 +4,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  VersionColumn,
 } from 'typeorm';
 import { User } from '../interfaces/user.interface';
 
@@ -18,7 +19,7 @@ export class UserEntity implements User {
   @Column()
   password: string;
 
-  @Column()
+  @VersionColumn()
   version: number;
 
   @CreateDateColumn({
