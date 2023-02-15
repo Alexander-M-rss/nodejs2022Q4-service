@@ -7,7 +7,7 @@ import { TracksModule } from './tracks/tracks.module';
 import { AlbumsModule } from './albums/albums.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import ormConfigOptions from './ormconfig';
+import { dataSourceOptions } from './ormconfig';
 
 @Module({
   imports: [
@@ -16,7 +16,7 @@ import ormConfigOptions from './ormconfig';
     TracksModule,
     AlbumsModule,
     FavoritesModule,
-    TypeOrmModule.forRoot(ormConfigOptions),
+    TypeOrmModule.forRoot(dataSourceOptions),
   ],
   controllers: [AppController],
   providers: [AppService],
