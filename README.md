@@ -5,17 +5,17 @@
 - Git - [Download & Install Git](https://git-scm.com/downloads).
 - Node.js - [Download & Install Node.js](https://nodejs.org/en/download/) and the npm package manager.
 
-## Downloading
+## Installation
 
 ```
-git clone {repository URL}
-```
-
-## Installing NPM modules
-
-```
+git clone --branch=develop https://github.com/Alexander-M-rss/nodejs2022Q4-service.git
+cd nodejs2022Q4-service
 npm install
 ```
+
+## Enviroment configuration
+
+Create `.env` file from `.env.example`
 
 ## Running application
 
