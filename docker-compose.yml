@@ -16,6 +16,9 @@ services:
       - type: bind
         source: ./src
         target: /usr/app/src
+      - type: bind
+        source: ./logs
+        target: /usr/app/logs
     restart: always
     depends_on:
       - db

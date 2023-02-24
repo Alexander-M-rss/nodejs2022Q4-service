@@ -9,6 +9,7 @@ import { FavoritesModule } from './favorites/favorites.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { dataSourceOptions } from './ormconfig';
 import { LoggerMiddleware } from './logger/logger.middleware';
+import { LoggerModule } from './logger/logger.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { LoggerMiddleware } from './logger/logger.middleware';
     AlbumsModule,
     FavoritesModule,
     TypeOrmModule.forRoot(dataSourceOptions),
+    LoggerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

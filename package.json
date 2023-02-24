@@ -13,6 +13,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
+    "create:log": "mkdir -p ./logs",
     "start:docker": "docker compose up --build",
     "scan:app": "docker scan alexandermrss/app",
     "scan:db": "docker scan alexandermrss/db",
