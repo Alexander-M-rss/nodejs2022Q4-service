@@ -18,11 +18,28 @@ npm install
 
 Create `.env` file from `.env.example`
 
+You can configure logs level and maximum log files size treshold in KB. When the size of the current file exceeds this threshold, a new file will be created. `Attention:` New files are created every time the application starts. `LOG_MAX_SIZE_TRESHOLD_KB` default value is 10.
+
+| LOG_LEVEL | collected log                              |
+|-----------|--------------------------------------------|
+| 0         | `none`                                     |
+| 1         | `error`                                    |
+| 2         | `error`, `log`                             |
+| 3         | `error`, `log`, `warn`                     |
+| 4         | `error`, `log`, `warn`, `debug`            |
+| 5         | `error`, `log`, `warn`, `debug`, `verbose` |
+
+Default `LOG_LEVEL` value is 2.
+If these settings are not present in the `.env` file or have invalid values, the default values will be used.
+
+You can find logs in `logs` folder in root of project.
+
 ## Running application
 
 ```bash
-npm start:docker
+npm run start:docker
 ```
+
 :warning: Please use with `sudo` if you are a Unix-like user.
 
 After starting the app on port (4000 as default) you can open
@@ -36,6 +53,7 @@ Scan application image
 ```bash
 npm run scan:app
 ```
+
 :warning: Please use with `sudo` if you are a Unix-like user.
 
 Scan database image
@@ -43,6 +61,7 @@ Scan database image
 ```bash
 npm run scan:db
 ```
+
 :warning: Please use with `sudo` if you are a Unix-like user.
 
 ## Testing
@@ -69,11 +88,7 @@ npm run test:auth
 
 To run only specific test suite with authorization
 
-```bash
-npm run test:auth -- <path to suite>
-```
-
-### Auto-fix and format
+```bash*.mdformat
 
 ```bash
 npm run lint
@@ -85,6 +100,6 @@ npm run format
 
 ### Debugging in VSCode
 
-Press <kbd>F5</kbd> to debug.
+Press `F5` to debug.
 
 For more information, visit: <https://code.visualstudio.com/docs/editor/debugging>
