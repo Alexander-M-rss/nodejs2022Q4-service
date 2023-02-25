@@ -9,6 +9,11 @@ import { Repository } from 'typeorm';
 import { UserEntity } from './entities/user.entity';
 import { User } from './interfaces/user.interface';
 import { InjectRepository } from '@nestjs/typeorm';
+import { compare, hash } from 'bcrypt';
+
+const CRYPT_SALT = isNaN(+process.env.CRYPT_SALT)
+  ? 10
+  : +process.env.CRYPT_SALT;
 
 @Injectable()
 export class UsersService {
@@ -20,6 +25,7 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<Omit<User, 'password'>> {
     const newUser = {
       ...createUserDto,
+      password: await hash(createUserDto.password, CRYPT_SALT),
     };
 
     const createdUser = this.userRepository.create(newUser);
@@ -50,10 +56,10 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException("User Id doesn't exist");
     }
-    if (user.password !== updatePasswordDto.oldPassword) {
+    if (!(await compare(updatePasswordDto.oldPassword, user.password))) {
       throw new ForbiddenException('Old password is incorect');
     }
-    user.password = updatePasswordDto.newPassword;
+    user.password = await hash(updatePasswordDto.newPassword, CRYPT_SALT);
 
     return (await this.userRepository.save(user)).response();
   }
