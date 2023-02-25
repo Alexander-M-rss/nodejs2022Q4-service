@@ -11,9 +11,7 @@ import { User } from './interfaces/user.interface';
 import { InjectRepository } from '@nestjs/typeorm';
 import { compare, hash } from 'bcrypt';
 
-const CRYPT_SALT = isNaN(+process.env.CRYPT_SALT)
-  ? 10
-  : +process.env.CRYPT_SALT;
+const CRYPT_SALT = +process.env.CRYPT_SALT;
 
 @Injectable()
 export class UsersService {
@@ -70,5 +68,9 @@ export class UsersService {
     if (!result.affected) {
       throw new NotFoundException("User Id doesn't exist");
     }
+  }
+
+  async findByLogin(login: string): Promise<User> {
+    return await this.userRepository.findOne({ where: { login } });
   }
 }
