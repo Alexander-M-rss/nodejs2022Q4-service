@@ -21,7 +21,23 @@ async function bootstrap() {
   const document = parse(source);
   SwaggerModule.setup('doc', app, document);
 
+  process.on('unhandledRejection', (reason) => {
+    logger.error(`Reason: ${reason}`, 'unhandledRejection');
+  });
+
+  process.on('uncaughtException', (err) => {
+    logger.error(`${err}`, 'uncaughtException');
+  });
+
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
   await app.listen(PORT, () => console.log(`Server started on ${PORT} port`));
 }
 bootstrap();
+
+// You can test logging of exception handlers by uncommenting lines:
+
+// setTimeout(() => Promise.reject('unhandledRejection test'), 2000);
+
+// setTimeout(() => {
+//   throw new Error('uncaughtException test');
+// }, 3000);
