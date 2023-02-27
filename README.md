@@ -9,7 +9,7 @@
 ## Installation
 
 ```bash
-git clone --branch=docker-db-orm https://github.com/Alexander-M-rss/nodejs2022Q4-service.git
+git clone --branch=logging-auth https://github.com/Alexander-M-rss/nodejs2022Q4-service.git
 cd nodejs2022Q4-service
 npm install
 ```
